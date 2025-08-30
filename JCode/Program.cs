@@ -20,28 +20,46 @@ var client = new ChatClient(
     {
         Endpoint = modelProviderUri
     });
-var prompt = await AnsiConsole.PromptAsync(new TextPrompt<string>(">"));
 var conversation = new List<ChatMessage>();
+var stats = new Stats(0, 0);
+
+var ui = new Layout("Root")
+    .SplitRows(
+        new Layout("Response"),
+        new Layout("Stats") );
+var prompt = await AnsiConsole.AskAsync<string>(">");
 
 while (true)
 {
-    var userChatMessage = ChatMessage.CreateUserMessage(prompt);
-    conversation.Add(userChatMessage);
-    
-    var completion = await client.CompleteChatAsync( conversation);
+    await AnsiConsole.Live(ui).StartAsync(async ctx =>
+    {
+        var userChatMessage = ChatMessage.CreateUserMessage(prompt);
+        conversation.Add(userChatMessage);
 
-    var stats = completion.Value.Usage;
-    var message = completion.Value.Content[0].Text;
-    var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
-    conversation.Add(assistantChatMessage);
-    
-    var content = Emoji.Replace(message);
-    var ui = new Layout()
-        .SplitRows(
-            new Layout(new Panel(content) { Border = BoxBorder.Rounded }),
-            new Layout(new Panel(new Markup(
+        var streamingResult = client.CompleteChatStreamingAsync(conversation);
+        var message = "";
+        await foreach (var update in streamingResult)
+        {
+            if (update.Usage != null)
+                stats = new Stats(
+                    stats.InputTokenCount + update.Usage.InputTokenCount,
+                    stats.OutputTokenCount + update.Usage.OutputTokenCount);
+
+            message += string.Join("", update.ContentUpdate.Select(cu => cu.Text));
+            var content = Emoji.Replace(message);
+            ui["Response"].Update(new Panel(content) { Border = BoxBorder.Rounded });
+            ui["Stats"].Update(new Panel(new Markup(
                     $"{Emoji.Known.UpArrow}: {stats.InputTokenCount} {Emoji.Known.DownArrow}: {stats.OutputTokenCount}"))
-                { Border = BoxBorder.Rounded }));
-    AnsiConsole.Write(ui);
-    prompt = await AnsiConsole.PromptAsync(new TextPrompt<string>(">"));
+                { Border = BoxBorder.Rounded });
+            ctx.Refresh();
+        }
+
+        var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
+        conversation.Add(assistantChatMessage);
+    });
+
+    prompt = await AnsiConsole.AskAsync<string>(">");
 }
+
+
+public record Stats(int InputTokenCount, int OutputTokenCount);
