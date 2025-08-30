@@ -1,4 +1,5 @@
 using System.ClientModel;
+using System.Management.Automation;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using OpenAI;
@@ -98,7 +99,7 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
                 break;
 
             var callId = $"{toolCall.Tool}-{Guid.NewGuid()}";
-            var result = Call(toolCall);
+            var result = await Call(toolCall);
             _conversation.Add(ChatMessage.CreateToolMessage(callId, result));
 
             iterations++;
@@ -124,13 +125,23 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         return message;
     }
 
-    private string Call(ToolCall toolCall)
+    private async Task<string> Call(ToolCall toolCall)
     {
         return toolCall.Tool switch
         {
             "weather_report" => "Sunny with a 30% chance of heavy rain.",
+            "powershell" => await RunPowershell(toolCall.Input),
             _ => throw new ArgumentOutOfRangeException($"Unkown tool: {toolCall.Tool}")
         };
+    }
+
+    private async Task<string> RunPowershell(Dictionary<string, string> toolCallInput)
+    {
+        var script = toolCallInput["script"];
+        using var ps = PowerShell.Create();
+        ps.AddScript(script);
+        var result = await ps.InvokeAsync();
+        return string.Join(Environment.NewLine, result.Select(r => r?.ToString()));
     }
 
     private ToolCall? ParseToolCall(string message)
@@ -138,7 +149,7 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         ToolCall? call;
         try
         {
-            var sanitized = Regex.Replace(message, @"```json\s*(.*?)\s*```", "$1", RegexOptions.Singleline).Trim();
+            var sanitized = Regex.Replace(message, @".*```json\s*(.*?)\s*```", "$1", RegexOptions.Singleline).Trim();
             call = JsonSerializer.Deserialize<ToolCall>(sanitized, _jsonSerializerOptions);
         }
         catch (JsonException e)

@@ -11,8 +11,16 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0-preview.7.25380.108" />
       <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0-preview.7.25380.108" />
+      <PackageReference Include="Microsoft.PowerShell.Commands.Diagnostics" Version="7.5.2" />
+      <PackageReference Include="Microsoft.PowerShell.Commands.Management" Version="7.5.2" />
+      <PackageReference Include="Microsoft.PowerShell.Commands.Utility" Version="7.5.2" />
+      <PackageReference Include="Microsoft.PowerShell.ConsoleHost" Version="7.5.2" />
+      <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.6.0-preview.4" />
+      <PackageReference Include="Microsoft.WSMan.Management" Version="7.5.2" />
       <PackageReference Include="OpenAI" Version="2.3.0" />
       <PackageReference Include="Spectre.Console.Cli" Version="0.50.1-preview.0.21" />
+      <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.8" />
+      <PackageReference Include="System.Management.Automation" Version="7.5.2" />
     </ItemGroup>
 
     <ItemGroup>
