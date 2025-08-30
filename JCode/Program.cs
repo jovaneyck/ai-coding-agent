@@ -24,9 +24,13 @@ var client = new ChatClient(
 
 var completion = await client.CompleteChatAsync(
     ChatMessage.CreateUserMessage(
-        "Reply with the following message where you fill in your own name: \'hello, my name is {name} :rocket:\'."));
+        "Reply with the following message where you fill in your own model name: \'hello, my name is {name} :rocket:\'."));
+var logprobs = completion.Value.ContentTokenLogProbabilities;
+var stats = completion.Value.Usage;
 var message = completion.Value.Content[0].Text;
 
 var content = Emoji.Replace(message);
-var ui = new Panel(content) { Border = BoxBorder.Rounded };
+var ui = new Layout().SplitRows(
+    new Layout(new Panel(content) { Border = BoxBorder.Rounded }),
+    new Layout(new Markup($"last message tokens in: {stats.InputTokenCount} out: {stats.OutputTokenCount}")));
 AnsiConsole.Write(ui);
