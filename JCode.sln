@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JCode", "JCode\JCode.csproj", "{263D32B2-0E7B-4067-BB2A-92B54F3068F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JCode.Tests", "JCode.Tests\JCode.Tests.csproj", "{4A857AB2-4B87-4582-8994-669FB8E52EC3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{263D32B2-0E7B-4067-BB2A-92B54F3068F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{263D32B2-0E7B-4067-BB2A-92B54F3068F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{263D32B2-0E7B-4067-BB2A-92B54F3068F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{263D32B2-0E7B-4067-BB2A-92B54F3068F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A857AB2-4B87-4582-8994-669FB8E52EC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A857AB2-4B87-4582-8994-669FB8E52EC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A857AB2-4B87-4582-8994-669FB8E52EC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A857AB2-4B87-4582-8994-669FB8E52EC3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
