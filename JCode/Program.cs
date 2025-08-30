@@ -21,15 +21,20 @@ var client = new ChatClient(
         Endpoint = modelProviderUri
     });
 var prompt = await AnsiConsole.PromptAsync(new TextPrompt<string>(">"));
+var conversation = new List<ChatMessage>();
 
 while (true)
 {
-    var completion = await client.CompleteChatAsync(
-        ChatMessage.CreateUserMessage(prompt));
+    var userChatMessage = ChatMessage.CreateUserMessage(prompt);
+    conversation.Add(userChatMessage);
+    
+    var completion = await client.CompleteChatAsync( conversation);
 
     var stats = completion.Value.Usage;
     var message = completion.Value.Content[0].Text;
-
+    var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
+    conversation.Add(assistantChatMessage);
+    
     var content = Emoji.Replace(message);
     var ui = new Layout()
         .SplitRows(
