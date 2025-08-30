@@ -41,4 +41,20 @@ public class ChatCommandTests
         Assert.Contains("john", output.ToLowerInvariant());
         Assert.Contains("4", output.ToLowerInvariant());
     }
+
+    [Fact]
+    public void I_can_get_weather_report_via_tool_call()
+    {
+        var console = new TestConsole();
+        console.Input.PushTextWithEnter("what is the weather in Geel?");
+        console.Input.PushTextWithEnter("exit");
+
+        var app = new CommandAppTester(null,null,console);
+        app.SetDefaultCommand<ChatCommand>();
+        var result = app.Run();
+
+        Assert.Equal(0, result.ExitCode);
+        var output = console.Output;
+        Assert.Contains("Sunny with a 30% chance of heavy rain.", output);
+    }
 }
