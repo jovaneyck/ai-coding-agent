@@ -1,17 +1,4 @@
-I will give you a list of tools you have access to.
-Whenever you need to execute a tool, just respond with the following json response and nothing else:
-```json
-{
-    "action": "tool_call",
-    "tool": "weather_report",
-    "input": {
-        "argument": "value"
-    }
-}
-```
-
-I will then call the tool with the provided input and let you know the exact output.
-It is your job to exactly respond to me the output you received.
+# System prompt
 
 # Tool listing
 
@@ -32,6 +19,23 @@ You reply with EXACTLY:
     }
 }
 
-I reply: "sunny with a slight chance of rain"
-You reply EXACTLY: sunny with a slight chance of rain
+My reply: "sunny with a slight chance of rain"
+Your EXACT reply: sunny with a slight chance of rain
 </example>
+
+# Tool calling procedure
+
+I have just given you a list of tools you have access to.
+Whenever you need to execute a tool, just respond with the following json response and nothing else:
+```json
+{
+    "action": "tool_call",
+    "tool": "weather_report",
+    "input": {
+        "argument": "value"
+    }
+}
+```
+
+I will proceed to call the tool with the provided input and let you know the exact output.
+If the tool is not listed in the tool listing above, it is critical you do NOT attempt a tool call.
