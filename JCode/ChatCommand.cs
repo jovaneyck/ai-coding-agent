@@ -1,5 +1,6 @@
 using System.ClientModel;
-using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using OpenAI;
 using OpenAI.Chat;
 using Spectre.Console;
@@ -13,6 +14,11 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
     private readonly List<ChatMessage> _conversation;
     private Stats _stats;
     private readonly IAnsiConsole _console;
+
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     public ChatCommand(IAnsiConsole console)
     {
@@ -42,13 +48,9 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         while (prompt != "exit")
         {
             if (prompt == "/clear")
-            {
                 FreshSession();
-            }
             else
-            {
                 await ProcessPromptAsync(prompt);
-            }
 
             prompt = _console.Ask<string>(">");
         }
@@ -73,6 +75,29 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         var userChatMessage = ChatMessage.CreateUserMessage(prompt);
         _conversation.Add(userChatMessage);
 
+        var message = await RunInference();
+        var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
+        _conversation.Add(assistantChatMessage);
+
+        var toolCall = ParseToolCall(message);
+        if (toolCall != null)
+        {
+            var callId = $"{toolCall.Tool}-{Guid.NewGuid()}";
+            var result = Call(toolCall);
+            _conversation.Add(ChatMessage.CreateToolMessage(callId, result));
+            
+            var message2 = await RunInference();
+            var assistantChatMessage2 = ChatMessage.CreateAssistantMessage(message2);
+            _conversation.Add(assistantChatMessage2);
+        }
+
+        _console.Write(new Panel(new Markup(
+                $"{Emoji.Known.UpArrow}: {_stats.InputTokenCount} {Emoji.Known.DownArrow}: {_stats.OutputTokenCount}"))
+            { Border = BoxBorder.Rounded });
+    }
+
+    private async Task<string> RunInference()
+    {
         var streamingResult = _client.CompleteChatStreamingAsync(_conversation);
         var message = "";
 
@@ -87,11 +112,32 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
             _console.Write(new Panel(content));
         }
 
-        var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
-        _conversation.Add(assistantChatMessage);
-        _console.Write(new Panel(new Markup(
-                $"{Emoji.Known.UpArrow}: {_stats.InputTokenCount} {Emoji.Known.DownArrow}: {_stats.OutputTokenCount}"))
-            { Border = BoxBorder.Rounded });
+        return message;
+    }
+
+    private string Call(ToolCall toolCall)
+    {
+        return toolCall.Tool switch
+        {
+            "weather_report" => "Sunny with a 30% chance of heavy rain.",
+            _ => throw new ArgumentOutOfRangeException($"Unkown tool: {toolCall.Tool}")
+        };
+    }
+
+    private ToolCall? ParseToolCall(string message)
+    {
+        ToolCall? call;
+        try
+        {
+            var sanitized = Regex.Replace(message, @"```json\s*(.*?)\s*```", "$1", RegexOptions.Singleline).Trim();
+            call = JsonSerializer.Deserialize<ToolCall>(sanitized, _jsonSerializerOptions);
+        }
+        catch (JsonException e)
+        {
+            return null;
+        }
+
+        return call?.Action != "tool_call" ? null : call;
     }
 
     private void UpdateStats(StreamingChatCompletionUpdate update)
@@ -116,4 +162,11 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
     {
         return ExecuteAsync();
     }
+}
+
+public class ToolCall
+{
+    public string Action { get; set; }
+    public string Tool { get; set; }
+    public Dictionary<string, string> Input { get; set; }
 }
