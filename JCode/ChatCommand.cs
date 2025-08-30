@@ -31,6 +31,8 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
 
         _conversation = [];
         _stats = new Stats(0, 0);
+
+        FreshSession();
     }
 
     private async Task<int> ExecuteAsync()
@@ -41,7 +43,7 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         {
             if (prompt == "/clear")
             {
-                ClearSession();
+                FreshSession();
             }
             else
             {
@@ -54,10 +56,16 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         return 0;
     }
 
-    private void ClearSession()
+    private void FreshSession()
     {
         _conversation.Clear();
+        _conversation.Add(ChatMessage.CreateSystemMessage(SystemPrompt()));
         _stats = new Stats(0, 0);
+    }
+
+    private string SystemPrompt()
+    {
+        return File.ReadAllText("prompts/tool_calling.md");
     }
 
     private async Task ProcessPromptAsync(string prompt)
