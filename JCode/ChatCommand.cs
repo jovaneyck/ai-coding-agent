@@ -149,7 +149,7 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         ToolCall? call;
         try
         {
-            var sanitized = Regex.Replace(message, @".*```json\s*(.*?)\s*```", "$1", RegexOptions.Singleline).Trim();
+            var sanitized = Regex.Replace(message, @".*```(?:json)?\s*(.*?)\s*```", "$1", RegexOptions.Singleline).Trim();
             call = JsonSerializer.Deserialize<ToolCall>(sanitized, _jsonSerializerOptions);
         }
         catch (JsonException e)
