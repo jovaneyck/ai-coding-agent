@@ -16,7 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="prompts\tool_calling.md">
+      <None Update="prompts\system_prompt.md">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>

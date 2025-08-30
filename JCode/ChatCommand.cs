@@ -65,7 +65,7 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
 
     private string SystemPrompt()
     {
-        return File.ReadAllText("prompts/tool_calling.md");
+        return File.ReadAllText("prompts/system_prompt.md");
     }
 
     private async Task ProcessPromptAsync(string prompt)
