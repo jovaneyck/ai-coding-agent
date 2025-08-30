@@ -8,14 +8,15 @@ using Spectre.Console;
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
 
-var cb = new ConfigurationBuilder();
-var config = cb.AddUserSecrets<Program>().Build();
-var apiKey = new ApiKey(config[Constants.OPENROUTER_API_KEY]!);
-var modelProviderUri = new Uri("https://openrouter.ai/api/v1");
+// var modelProviderUri = new Uri("https://openrouter.ai/api/v1");
+// var model = "moonshotai/kimi-k2:free";
+
+var modelProviderUri = new Uri("http://192.168.129.8:11434/v1");
+var model = "qwen2.5-coder:7b-instruct";
 
 var client = new ChatClient(
-    "moonshotai/kimi-k2:free",
-    new ApiKeyCredential(apiKey.Key),
+    model,
+    new ApiKeyCredential(":unused:ollama:"),
     new OpenAIClientOptions
     {
         Endpoint = modelProviderUri
@@ -23,7 +24,7 @@ var client = new ChatClient(
 
 var completion = await client.CompleteChatAsync(
     ChatMessage.CreateUserMessage(
-        "Hello kimi! How are you today?"));
+        "Reply with the following message where you fill in your own name: \'hello, my name is {name} :rocket:\'."));
 var message = completion.Value.Content[0].Text;
 
 var content = Emoji.Replace(message);
