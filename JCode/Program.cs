@@ -25,33 +25,41 @@ var stats = new Stats(0, 0);
 
 var prompt = await AnsiConsole.AskAsync<string>(">");
 
-while (true)
+while (prompt != "exit")
 {
-    var userChatMessage = ChatMessage.CreateUserMessage(prompt);
-    conversation.Add(userChatMessage);
-
-    var streamingResult = client.CompleteChatStreamingAsync(conversation);
-    var message = "";
-    await foreach (var update in streamingResult)
+    if (prompt == "/clear")
     {
-        if (update.Usage != null)
-            stats = new Stats(
-                stats.InputTokenCount + update.Usage.InputTokenCount,
-                stats.OutputTokenCount + update.Usage.OutputTokenCount);
-
-        message += string.Join("", update.ContentUpdate.Select(cu => cu.Text));
-        var content = Markup.Escape(Emoji.Replace(message));
-
-        AnsiConsole.Clear();
-        AnsiConsole.Write(new Panel(content) { Border = BoxBorder.None });
+        conversation.Clear();
+        stats = new Stats(0, 0);
     }
+    else
+    {
+        var userChatMessage = ChatMessage.CreateUserMessage(prompt);
+        conversation.Add(userChatMessage);
+
+        var streamingResult = client.CompleteChatStreamingAsync(conversation);
+        var message = "";
+        await foreach (var update in streamingResult)
+        {
+            if (update.Usage != null)
+                stats = new Stats(
+                    stats.InputTokenCount + update.Usage.InputTokenCount,
+                    stats.OutputTokenCount + update.Usage.OutputTokenCount);
+
+            message += string.Join("", update.ContentUpdate.Select(cu => cu.Text));
+            var content = Markup.Escape(Emoji.Replace(message));
+
+            AnsiConsole.Clear();
+            AnsiConsole.Write(new Panel(content) { Border = BoxBorder.None });
+        }
 
 
-    var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
-    conversation.Add(assistantChatMessage);
-    AnsiConsole.Write(new Panel(new Markup(
-            $"{Emoji.Known.UpArrow}: {stats.InputTokenCount} {Emoji.Known.DownArrow}: {stats.OutputTokenCount}"))
-        { Border = BoxBorder.Rounded });
+        var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
+        conversation.Add(assistantChatMessage);
+        AnsiConsole.Write(new Panel(new Markup(
+                $"{Emoji.Known.UpArrow}: {stats.InputTokenCount} {Emoji.Known.DownArrow}: {stats.OutputTokenCount}"))
+            { Border = BoxBorder.Rounded });
+    }
     prompt = await AnsiConsole.AskAsync<string>(">");
 }
 
