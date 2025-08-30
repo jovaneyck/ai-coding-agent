@@ -19,7 +19,6 @@ It is your job to exactly respond to me the output you received.
 
 * input: cityName: string
 * output: weatherReport: string
-* how to call: getWeatherReport(cityName)
 
 <example>
 "I want to know the weather in New York"
@@ -29,7 +28,10 @@ You reply with EXACTLY:
     "action": "tool_call",
     "tool": "weather_report",
     "input": {
-        "argument": "New York"
+        "cityName": "New York"
     }
 }
+
+I reply: "sunny with a slight chance of rain"
+You reply EXACTLY: sunny with a slight chance of rain
 </example>
