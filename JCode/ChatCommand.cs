@@ -75,25 +75,34 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         var userChatMessage = ChatMessage.CreateUserMessage(prompt);
         _conversation.Add(userChatMessage);
 
-        var message = await RunInference();
-        var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
-        _conversation.Add(assistantChatMessage);
-
-        var toolCall = ParseToolCall(message);
-        if (toolCall != null)
-        {
-            var callId = $"{toolCall.Tool}-{Guid.NewGuid()}";
-            var result = Call(toolCall);
-            _conversation.Add(ChatMessage.CreateToolMessage(callId, result));
-            
-            var message2 = await RunInference();
-            var assistantChatMessage2 = ChatMessage.CreateAssistantMessage(message2);
-            _conversation.Add(assistantChatMessage2);
-        }
+        await HandleToolCallChainAsync();
 
         _console.Write(new Panel(new Markup(
                 $"{Emoji.Known.UpArrow}: {_stats.InputTokenCount} {Emoji.Known.DownArrow}: {_stats.OutputTokenCount}"))
             { Border = BoxBorder.Rounded });
+    }
+
+    private async Task HandleToolCallChainAsync()
+    {
+        const int maxIterations = 100;
+        var iterations = 0;
+
+        while (iterations < maxIterations)
+        {
+            var message = await RunInference();
+            var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
+            _conversation.Add(assistantChatMessage);
+
+            var toolCall = ParseToolCall(message);
+            if (toolCall == null)
+                break;
+
+            var callId = $"{toolCall.Tool}-{Guid.NewGuid()}";
+            var result = Call(toolCall);
+            _conversation.Add(ChatMessage.CreateToolMessage(callId, result));
+
+            iterations++;
+        }
     }
 
     private async Task<string> RunInference()
@@ -166,7 +175,7 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
 
 public class ToolCall
 {
-    public string Action { get; set; }
-    public string Tool { get; set; }
-    public Dictionary<string, string> Input { get; set; }
+    public required string Action { get; set; }
+    public required string Tool { get; set; }
+    public required Dictionary<string, string> Input { get; set; }
 }
