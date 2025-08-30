@@ -57,4 +57,32 @@ public class ChatCommandTests
         var output = console.Output;
         Assert.Contains("Sunny with a 30% chance of heavy rain.", output);
     }
+
+    [Fact]
+    public void I_can_read_file_contents_via_powershell_tool()
+    {
+        var secret = Guid.NewGuid().ToString();
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllText(tempFile, secret);
+
+        try
+        {
+            var console = new TestConsole();
+            console.Input.PushTextWithEnter($"Read the secret from the file at {tempFile}");
+            console.Input.PushTextWithEnter("exit");
+
+            var app = new CommandAppTester(null, null, console);
+            app.SetDefaultCommand<ChatCommand>();
+            var result = app.Run();
+
+            Assert.Equal(0, result.ExitCode);
+            var output = console.Output;
+            Assert.Contains(secret, output);
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+                File.Delete(tempFile);
+        }
+    }
 }

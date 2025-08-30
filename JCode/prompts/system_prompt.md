@@ -29,7 +29,7 @@ You are running natively on a Windows machine.
 
 ## Powershell
 
-* description: full access to powershell.
+* description: full access to powershell. You are allowed to use this to list, read, create and edit files.
 * input: script: string
 * output: result: string
 
