@@ -9,7 +9,7 @@ using Spectre.Console.Cli;
 
 namespace JCode;
 
-public class ChatCommand : ICommand<EmptyCommandSettings>
+public partial class ChatCommand : ICommand<EmptyCommandSettings>
 {
     private readonly ChatClient _client;
     private readonly List<ChatMessage> _conversation;
@@ -25,8 +25,9 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
     {
         _console = console;
 
-        var modelProviderUri = new Uri("http://192.168.129.8:11434/v1");
+        var modelProviderUri = new Uri("http://192.168.129.27:11434/v1");
         var model = "qwen2.5-coder:7b-instruct";
+        // var model = "qwen3-coder:30b";
 
         _client = new ChatClient(
             model,
@@ -85,7 +86,7 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
 
     private async Task HandleToolCallChainAsync()
     {
-        const int maxIterations = 100;
+        const int maxIterations = 10;
         var iterations = 0;
 
         while (iterations < maxIterations)
@@ -93,12 +94,12 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
             var message = await RunInference();
             var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
             _conversation.Add(assistantChatMessage);
-
+            
             var toolCall = ParseToolCall(message);
             if (toolCall == null)
                 break;
 
-            var callId = $"{toolCall.Tool}-{Guid.NewGuid()}";
+            var callId = $"{toolCall.Name}-{Guid.NewGuid()}";
             var result = await Call(toolCall);
             _conversation.Add(ChatMessage.CreateToolMessage(callId, result));
 
@@ -108,13 +109,34 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
 
     private async Task<string> RunInference()
     {
-        var streamingResult = _client.CompleteChatStreamingAsync(_conversation);
+        var options = new ChatCompletionOptions
+        {
+            ToolChoice = ChatToolChoice.CreateAutoChoice(),
+            Tools =
+            {
+                ChatTool.CreateFunctionTool("get_secret", "gets the magical secret"),
+                ChatTool.CreateFunctionTool("powershell", "executes a powershell script. You can use this to inspect files and directories, to create files, to change a files contents and to run node scripts.",
+                    BinaryData.FromBytes("""
+                                         {
+                                             "type": "object",
+                                             "properties": {
+                                                 "script": {
+                                                     "type": "string",
+                                                     "description": "The powershell script to execute"
+                                                 }
+                                             },
+                                             "required": [ "script" ]
+                                         }
+                                         """u8.ToArray())),
+            }
+        };
+        
+        var streamingResult = _client.CompleteChatStreamingAsync(_conversation, options);
         var message = "";
 
         await foreach (var update in streamingResult)
         {
             UpdateStats(update);
-
             message += string.Join("", update.ContentUpdate.Select(cu => cu.Text));
             var content = Markup.Escape(Emoji.Replace(message));
 
@@ -127,11 +149,11 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
 
     private async Task<string> Call(ToolCall toolCall)
     {
-        return toolCall.Tool switch
+        return toolCall.Name switch
         {
-            "weather_report" => "Sunny with a 30% chance of heavy rain.",
-            "powershell" => await RunPowershell(toolCall.Input),
-            _ => throw new ArgumentOutOfRangeException($"Unkown tool: {toolCall.Tool}")
+            "get_secret" => "Key lime pie!",
+            "powershell" => await RunPowershell(toolCall.Arguments),
+            _ => throw new ArgumentOutOfRangeException($"Unkown tool: {toolCall.Name}")
         };
     }
 
@@ -141,23 +163,22 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
         using var ps = PowerShell.Create();
         ps.AddScript(script);
         var result = await ps.InvokeAsync();
-        return string.Join(Environment.NewLine, result.Select(r => r?.ToString()));
+        return "Powershell script executed. Output: "+string.Join(Environment.NewLine, result.Select(r => r?.ToString()));
     }
 
     private ToolCall? ParseToolCall(string message)
     {
-        ToolCall? call;
+        //Model api's typically return "I'm doing a tool call here" but ollama+qwen coder aren't (yet)
+        //so we have to dig a bit deeper than usual to recognize tool calls
         try
         {
-            var sanitized = Regex.Replace(message, @".*```(?:json)?\s*(.*?)\s*```", "$1", RegexOptions.Singleline).Trim();
-            call = JsonSerializer.Deserialize<ToolCall>(sanitized, _jsonSerializerOptions);
+            var sanitized = JsonBlobRegex().Replace(message, "$1").Trim();
+            return JsonSerializer.Deserialize<ToolCall>(sanitized, _jsonSerializerOptions);
         }
         catch (JsonException e)
         {
             return null;
         }
-
-        return call?.Action != "tool_call" ? null : call;
     }
 
     private void UpdateStats(StreamingChatCompletionUpdate update)
@@ -182,11 +203,13 @@ public class ChatCommand : ICommand<EmptyCommandSettings>
     {
         return ExecuteAsync();
     }
+
+    [GeneratedRegex(@".*```(?:json)?\s*(.*?)\s*```", RegexOptions.Singleline)]
+    private static partial Regex JsonBlobRegex();
 }
 
 public class ToolCall
 {
-    public required string Action { get; set; }
-    public required string Tool { get; set; }
-    public required Dictionary<string, string> Input { get; set; }
+    public required string Name { get; set; }
+    public required Dictionary<string, string> Arguments { get; set; }
 }
