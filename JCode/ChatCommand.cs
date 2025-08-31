@@ -115,7 +115,7 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
             Tools =
             {
                 ChatTool.CreateFunctionTool("get_secret", "gets the magical secret"),
-                ChatTool.CreateFunctionTool("powershell", "executes a powershell script. You can use this to inspect files and directories, to create files, to change a files contents and to run node scripts.",
+                ChatTool.CreateFunctionTool("powershell", "executes a powershell script. You can use this to inspect files and directories, to create files, to change file contents and to run node scripts.",
                     BinaryData.FromBytes("""
                                          {
                                              "type": "object",

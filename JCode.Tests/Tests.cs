@@ -1,4 +1,3 @@
-using JCode;
 using Spectre.Console.Testing;
 using Xunit;
 using Xunit.Abstractions;
@@ -14,7 +13,7 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
         console.Input.PushTextWithEnter("Just reply with \'hello world\'");
         console.Input.PushTextWithEnter("exit");
 
-        var app = new CommandAppTester(null,null,console);
+        var app = new CommandAppTester(null, null, console);
         app.SetDefaultCommand<ChatCommand>();
         var result = app.Run();
 
@@ -34,7 +33,7 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
         console.Input.PushTextWithEnter("What is the value of x?");
         console.Input.PushTextWithEnter("exit");
 
-        var app = new CommandAppTester(null,null,console);
+        var app = new CommandAppTester(null, null, console);
         app.SetDefaultCommand<ChatCommand>();
         var result = app.Run();
 
@@ -52,10 +51,10 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
         console.Input.PushTextWithEnter("what is the secret?");
         console.Input.PushTextWithEnter("exit");
 
-        var app = new CommandAppTester(null,null,console);
+        var app = new CommandAppTester(null, null, console);
         app.SetDefaultCommand<ChatCommand>();
         var result = app.Run();
-        
+
         var output = console.Output;
         outputHelper.WriteLine(output);
         Assert.Equal(0, result.ExitCode);
@@ -72,7 +71,8 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
         try
         {
             var console = new TestConsole();
-            console.Input.PushTextWithEnter($"Read the contents in the file at {tempFile} and echo EXACTLY what you find.");
+            console.Input.PushTextWithEnter(
+                $"Read the contents in the file at {tempFile} and echo EXACTLY what you find.");
             console.Input.PushTextWithEnter("exit");
 
             var app = new CommandAppTester(null, null, console);
@@ -90,7 +90,7 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
                 File.Delete(tempFile);
         }
     }
-    
+
     [Fact]
     public void Write_files()
     {
@@ -99,18 +99,54 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
         try
         {
             var console = new TestConsole();
-            console.Input.PushTextWithEnter($"First concatenate \'ab\' and \'cd\' by yourself. Next, write ONLY the result ot that concatenation in a new text file at {tempFile}.");
+            console.Input.PushTextWithEnter(
+                $"First concatenate \'ab\' and \'cd\' by yourself. Next, write ONLY the result ot that concatenation in a new text file at {tempFile}.");
             console.Input.PushTextWithEnter("exit");
 
             var app = new CommandAppTester(null, null, console);
             app.SetDefaultCommand<ChatCommand>();
             var result = app.Run();
-            
+
             var output = console.Output;
             outputHelper.WriteLine(output);
             Assert.Equal(0, result.ExitCode);
             var contents = File.ReadAllText(tempFile);
-            Assert.Contains("abcd",contents);
+            Assert.Contains("abcd", contents);
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+                File.Delete(tempFile);
+        }
+    }
+
+
+    [Fact]
+    public void Writes_And_Runs_Code()
+    {
+        var tempFile = Path.GetTempFileName().Replace(".tmp", ".js");
+        
+        try
+        {
+            var console = new TestConsole();
+            console.Input.PushTextWithEnter(
+                $"Today we will be programming in JAVASCRIPT. Create a self-contained ONELINER (semi-colons allowed) that calculates fac(10) and save it to {tempFile}.");
+            console.Input.PushTextWithEnter("Now run that script using NODE and tell me the result.");
+            console.Input.PushTextWithEnter("exit");
+
+            var app = new CommandAppTester(null, null, console);
+            app.SetDefaultCommand<ChatCommand>();
+            var result = app.Run();
+
+            var output = console.Output;
+            outputHelper.WriteLine(output);
+            Assert.Equal(0, result.ExitCode);
+            var contents = File.ReadAllText(tempFile);
+            outputHelper.WriteLine("The script we came up with:");
+            outputHelper.WriteLine(contents);
+            Assert.NotEmpty(contents);
+            Assert.DoesNotContain("3628800", contents);
+            Assert.Contains("3628800", output);
         }
         finally
         {
