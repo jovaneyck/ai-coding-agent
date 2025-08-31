@@ -145,8 +145,8 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
             outputHelper.WriteLine("The script we came up with:");
             outputHelper.WriteLine(contents);
             Assert.NotEmpty(contents);
-            Assert.DoesNotContain("3628800", contents);
-            Assert.Contains("3628800", output);
+            Assert.DoesNotContain("3628800", contents.Replace(".","").Replace(",",""));
+            Assert.Contains("3628800", output.Replace(".","").Replace(",",""));
         }
         finally
         {

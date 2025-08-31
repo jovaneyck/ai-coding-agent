@@ -151,7 +151,7 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
     {
         return toolCall.Name switch
         {
-            "get_secret" => "Key lime pie!",
+            "get_secret" => "The secret is 'Key lime pie'.",
             "powershell" => await RunPowershell(toolCall.Arguments),
             _ => throw new ArgumentOutOfRangeException($"Unkown tool: {toolCall.Name}")
         };
