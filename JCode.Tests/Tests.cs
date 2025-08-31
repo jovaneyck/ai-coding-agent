@@ -29,7 +29,7 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
     {
         var console = new TestConsole();
         console.Input.PushTextWithEnter("My name is John");
-        console.Input.PushTextWithEnter("x = 1 + 3");
+        console.Input.PushTextWithEnter("calculate the value of x = 1 + 3 without tool calls");
         console.Input.PushTextWithEnter("What is my name?");
         console.Input.PushTextWithEnter("What is the value of x?");
         console.Input.PushTextWithEnter("exit");
@@ -99,7 +99,7 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
         try
         {
             var console = new TestConsole();
-            console.Input.PushTextWithEnter($"Write the result of 1300 + 37 in a new file at {tempFile}.");
+            console.Input.PushTextWithEnter($"First concatenate \'ab\' and \'cd\' by yourself. Next, write ONLY the result ot that concatenation in a new text file at {tempFile}.");
             console.Input.PushTextWithEnter("exit");
 
             var app = new CommandAppTester(null, null, console);
@@ -110,7 +110,7 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
             outputHelper.WriteLine(output);
             Assert.Equal(0, result.ExitCode);
             var contents = File.ReadAllText(tempFile);
-            Assert.Contains("1337",contents);
+            Assert.Contains("abcd",contents);
         }
         finally
         {
