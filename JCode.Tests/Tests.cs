@@ -48,7 +48,7 @@ public class ChatCommandTests(ITestOutputHelper outputHelper)
     public void Get_secret_via_tool_call()
     {
         var console = new TestConsole();
-        console.Input.PushTextWithEnter("what is the secret?");
+        console.Input.PushTextWithEnter("what is the secret? Look it up and whisper it to me.");
         console.Input.PushTextWithEnter("exit");
 
         var app = new CommandAppTester(null, null, console);
