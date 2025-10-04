@@ -25,13 +25,12 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
     {
         _console = console;
 
-        var modelProviderUri = new Uri("http://192.168.129.27:11434/v1");
-        var model = "qwen2.5-coder:7b-instruct";
-        // var model = "qwen3-coder:30b";
-
+        var modelProviderUri = new Uri("<uri here>");
+        var model = "<model deployment name here>";
+        var key = "<key here>";
         _client = new ChatClient(
             model,
-            new ApiKeyCredential(":unused:ollama:"),
+            new ApiKeyCredential(key),
             new OpenAIClientOptions
             {
                 Endpoint = modelProviderUri
@@ -86,28 +85,16 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
 
     private async Task HandleToolCallChainAsync()
     {
-        const int maxIterations = 10;
-        var iterations = 0;
-
-        while (iterations < maxIterations)
-        {
-            var message = await RunInference();
-            var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
-            _conversation.Add(assistantChatMessage);
-            
-            var toolCall = ParseToolCall(message);
-            if (toolCall == null)
-                break;
-
-            var callId = $"{toolCall.Name}-{Guid.NewGuid()}";
-            var result = await Call(toolCall);
-            _conversation.Add(ChatMessage.CreateToolMessage(callId, result));
-
-            iterations++;
-        }
+         var response = await RunInference();
+         if (response.ToolCall != null)
+         {
+             await HandleToolCallChainAsync();
+         }
     }
 
-    private async Task<string> RunInference()
+    public record InferenceResponse(string? Content, ToolCall? ToolCall);
+    
+    private async Task<InferenceResponse> RunInference()
     {
         var options = new ChatCompletionOptions
         {
@@ -131,20 +118,37 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
             }
         };
         
-        var streamingResult = _client.CompleteChatStreamingAsync(_conversation, options);
-        var message = "";
+        var update = (await _client.CompleteChatAsync(_conversation, options)).Value;
+        UpdateStats(update.Usage);
 
-        await foreach (var update in streamingResult)
+        switch (update.FinishReason)
         {
-            UpdateStats(update);
-            message += string.Join("", update.ContentUpdate.Select(cu => cu.Text));
-            var content = Markup.Escape(Emoji.Replace(message));
-
-            _console.Clear();
-            _console.Write(new Panel(content));
+            case ChatFinishReason.Stop:
+            {
+                _conversation.Add(ChatMessage.CreateAssistantMessage(update));
+                
+                var message = string.Join("", update.Content.Select(cu => cu.Text));
+                var content = Markup.Escape(Emoji.Replace(message));
+                _console.Clear();
+                _console.Write(new Panel(content));
+                return new InferenceResponse(message, null);
+            }
+            case ChatFinishReason.ToolCalls:
+            {
+                _conversation.Add(ChatMessage.CreateAssistantMessage(update));
+                var toolCall = new ToolCall
+                {
+                    Name = update.ToolCalls[0].FunctionName,
+                    Arguments = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(update.ToolCalls[0].FunctionArguments.ToString()) ?? new Dictionary<string, string>()
+                };
+                var result = await Call(toolCall);
+                _conversation.Add(ChatMessage.CreateToolMessage(update.ToolCalls[0].Id, result));
+                return new InferenceResponse(null, toolCall);
+                
+            }
+            default:
+                throw new ArgumentOutOfRangeException();
         }
-
-        return message;
     }
 
     private async Task<string> Call(ToolCall toolCall)
@@ -181,12 +185,12 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
         }
     }
 
-    private void UpdateStats(StreamingChatCompletionUpdate update)
+    private void UpdateStats(ChatTokenUsage update)
     {
-        if (update.Usage != null)
+        if (update != null)
             _stats = new Stats(
-                _stats.InputTokenCount + update.Usage.InputTokenCount,
-                _stats.OutputTokenCount + update.Usage.OutputTokenCount);
+                _stats.InputTokenCount + update.InputTokenCount,
+                _stats.OutputTokenCount + update.OutputTokenCount);
     }
 
     public Task<int> Execute(CommandContext context, EmptyCommandSettings settings)
