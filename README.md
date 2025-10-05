@@ -29,8 +29,22 @@ Acceptance test:
 
 </details>
 
+
 <details>
-<summary>Let's a conversation</summary>
+<summary>Adding a system prompt</summary>
+
+Different kinds of messages exist. We have seen the first two in hello world: user messages are the prompts we give to the model, assistant messages are messages returned by the model.
+Now let's introduce a third kind of messages: system messages.
+System messages are instructions that set the behavior of the model. Create a system prompt and load it into your conversation as the first message with role "system".
+
+Acceptance test:
+(create system message telling the model to talk like a pirate)
+> Hi there!
+> Ahoy matey! How can I be of service to ye today?
+</details>
+
+<details>
+<summary>Let's a lengthy conversation</summary>
 
 Now we want to keep track of the conversation. We can do this by keeping a list of messages and appending both user and system prompts to it.
 Add this conversation history to future model calls.
