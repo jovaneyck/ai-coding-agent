@@ -56,7 +56,7 @@ Acceptance test:
 </details>
 
 <details>
-<summary>Let's a lengthy conversation</summary>
+<summary>Let's have a lengthy conversation</summary>
 
 Now we want to keep track of the conversation. We can do this by keeping a list of messages and appending both user and system prompts to it.
 Add this conversation history to future model calls.
