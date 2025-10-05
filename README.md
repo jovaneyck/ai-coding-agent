@@ -5,10 +5,15 @@ Build your own working AI coding agent. For educational purposes only.
 ## Step by step
 
 <details>
-<summary>Choose your destiny: local model vs. cloud</summary>
+<summary>(Optional) explore local LLM's with LM studio</summary>
 
-* LM studio. Pick a model that fits your GPU/VRAM with tool calling support
-* Cloud: Openai gpt-4o-mini provided
+This step is optional, but very much recommended if you want to understand how LLM's work. 
+Download and install [LM Studio](https://lmstudio.ai/) and try to achieve the following tasks:
+
+* Download a small local model (e.g. Qwen/Qwen2.5-Coder-7B-Instruct-GGUF).
+* Try chatting with the downloaded model in LM studio. Play around with the settings (developer mode, temperature, top_p, max new tokens, etc).
+* Try starting the LM studio server and sending a request to it via curl or postman. Play around with the settings (verbose logging, log incoming tokens)
+
 </details>
 
 
@@ -16,19 +21,26 @@ Build your own working AI coding agent. For educational purposes only.
 <summary>Hello world!</summary>
 
 Look for an openAI client for your language of choice.
-Now build out your walking skeleton: build a REPL loop that:
+You can use LM studio and your local model for the rest of this workshop. If your laptop struggles running tool-calling models you can use the OpenAI key provided by the facilitator.
+
+Now let's build out your walking skeleton! 
+Build a REPL loop that:
 
 * asks for a user prompt
-* sends the prompt to the model
-* prints the response to console (for bonus points stream responses instead of awaiting the full output)
+* forwards the prompt to the model
+* prints the model response to console
 * repeats
 
 Acceptance test:
 > Say "hello world"
 > "Hello wold"
 
-</details>
+**note**: KISS aka keep it super simple, don't bother with any bells and whistles yet.
+We have a lot to go through in the next 60 minutes 😅
 
+If you feel comfortable in your coding skills and want to add _one_ super useful "bell and whistle", consider writing automated tests that run end-to-end acceptance tests for your AI agent.
+It will save you from manually testing for regressions after each step.
+</details>
 
 <details>
 <summary>Adding a system prompt</summary>
