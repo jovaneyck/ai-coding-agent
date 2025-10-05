@@ -25,8 +25,8 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
     {
         _console = console;
 
-        var modelProviderUri = new Uri("http://192.168.129.27:11434/v1");
-        var model = "qwen2.5-coder:7b-instruct";
+        var modelProviderUri = new Uri("http://127.0.0.1:1234/v1");
+        var model = "qwen2.5-coder-7b-instruct";
         // var model = "qwen3-coder:30b";
 
         _client = new ChatClient(
@@ -86,24 +86,10 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
 
     private async Task HandleToolCallChainAsync()
     {
-        const int maxIterations = 10;
-        var iterations = 0;
-
-        while (iterations < maxIterations)
+        var message = await RunInference();
+        if (message == "") //tool call
         {
-            var message = await RunInference();
-            var assistantChatMessage = ChatMessage.CreateAssistantMessage(message);
-            _conversation.Add(assistantChatMessage);
-            
-            var toolCall = ParseToolCall(message);
-            if (toolCall == null)
-                break;
-
-            var callId = $"{toolCall.Name}-{Guid.NewGuid()}";
-            var result = await Call(toolCall);
-            _conversation.Add(ChatMessage.CreateToolMessage(callId, result));
-
-            iterations++;
+            await HandleToolCallChainAsync();
         }
     }
 
@@ -133,17 +119,42 @@ public partial class ChatCommand : ICommand<EmptyCommandSettings>
         
         var streamingResult = _client.CompleteChatStreamingAsync(_conversation, options);
         var message = "";
-
+        List<StreamingChatToolCallUpdate> toolUpdates = [];
         await foreach (var update in streamingResult)
         {
             UpdateStats(update);
-            message += string.Join("", update.ContentUpdate.Select(cu => cu.Text));
-            var content = Markup.Escape(Emoji.Replace(message));
 
-            _console.Clear();
-            _console.Write(new Panel(content));
+            if (update.ContentUpdate.Any())
+            {
+                message += string.Join("", update.ContentUpdate.Select(cu => cu.Text));
+                var content = Markup.Escape(Emoji.Replace(message));
+
+                _console.Clear();
+                _console.Write(new Panel(content));
+            }
+            else if (update.ToolCallUpdates.Any())
+            {
+                toolUpdates.AddRange(update.ToolCallUpdates);
+            }
         }
 
+        if (message != "")
+        {
+            _conversation.Add(ChatMessage.CreateAssistantMessage(message));
+        }
+        else if (toolUpdates.Any())
+        {
+            _conversation.Add(ChatMessage.CreateToolMessage(toolUpdates.First().ToolCallId, toolUpdates[0].FunctionName));
+            var rawArgs = string.Join("",toolUpdates.Select(tu=>tu.FunctionArgumentsUpdate.ToString()));
+            var parsedArgs = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string,string>>(rawArgs);
+            var toolResult = await Call(new ToolCall()
+            {
+                Name = toolUpdates[0].FunctionName,
+                Arguments = parsedArgs ?? new Dictionary<string, string>()
+            });
+            _conversation.Add(ChatMessage.CreateToolMessage(toolUpdates.First().ToolCallId, toolResult));
+        }
+        
         return message;
     }
 
